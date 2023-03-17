@@ -1,0 +1,5 @@
+color value=#ff7aff
+id=sparkle gimp:layer-mode layer-mode=divide opacity=0.02  aux=[  ref=sparkle cell-noise shape=1 scale=0.14 seed=343 iterations=1     ]   
+id=1 gimp:layer-mode layer-mode=color-erase  aux=[  ref=1 color value=#ff7aff  ]
+color-overlay value=#ffffff
+dropshadow color=#ffef93 x=5 y=3 opacity=0
