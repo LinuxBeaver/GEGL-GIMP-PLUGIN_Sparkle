@@ -1,5 +1,6 @@
 
 
+![image preview](sparkle.png  )
 
 
 ## Compiling and Installing
