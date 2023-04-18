@@ -163,6 +163,7 @@ static void attach (GeglOperation *operation)
 
 
  gegl_node_link_many (input, color2, divide, colorerase, color, ds, opacity, ontop, output, NULL);
+ gegl_node_link_many (color2, cellnoise, NULL);
 gegl_node_connect_from (divide, "aux", cellnoise, "output"); 
 gegl_node_connect_from (colorerase, "aux", color3, "output"); 
 gegl_node_connect_from (ontop, "aux", layer, "output"); 
