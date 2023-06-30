@@ -17,32 +17,31 @@
  * 2023 Beaver GEGL sparkle
  */
 
+/*
+Rough GEGL Graph of GEGL Sparkle so users can test it without installing. 
+
+
+src aux=[ 
+
+color value=#ff7aff
+id=sparkle gimp:layer-mode layer-mode=divide opacity=0.05  aux=[  ref=sparkle cell-noise shape=1 scale=0.50  ]   
+id=1 gimp:layer-mode layer-mode=color-erase  aux=[  ref=1 color value=#ff7aff  ]
+
+ ]
+crop
+
+ */
+
 #include "config.h"
 #include <glib/gi18n-lib.h>
 
 #ifdef GEGL_PROPERTIES
 
-
-property_color (color3, _("Color 3"), "#ff7aff")
-    description (_("The color to paint over the input"))
-    ui_meta     ("role", "output-extent")
-
-property_color (color2, _("Color 2"), "#ff7aff")
-    description (_("The color to paint over the input"))
-    ui_meta     ("role", "output-extent")
-
 property_color (color, _("Color"), "#ffffff")
-    description (_("The color to paint over the input"))
-
+    description (_("The main sparkle's color"))
 
 property_color  (colorshadow, _("Shadow Color"), "#74e3ff")
-    /* TRANSLATORS: the string 'black' should not be translated */
-  description   (_("The shadow's color (defaults to 'black')"))
-
-/* It does make sense to sometimes have opacities > 1 (see GEGL logo
- * for example)
- */
-
+  description   (_("The main sparkle's optional shadow color"))
 
 property_double (x, _("Shadow Clone X"), -126)
   description   (_("Horizontal shadow offset"))
@@ -58,44 +57,29 @@ property_double (y, _("Shadow Clone  Y"), -8)
   ui_meta       ("unit", "pixel-distance")
   ui_meta       ("axis", "y")
 
-
-
-property_double (opacity, _("Shadow clone mode Opacity --SLIDE TO ENABLE SHADOW"), 0.0)
+property_double (opacity, _("Shadow clone mode opacity --SLIDE TO ENABLE SHADOW"), 0.0)
+  description   (_("A dropshadow that creates the apperance of a second sparkle field. It depends on the sparkle above as it is its drop shadow."))
   value_range   (0.0, 1.5)
   ui_steps      (0.1, 0.10)
 
 
-property_file_path(upload, _("Top image Overlay"), "")
-    description (_("Source image file path (png, jpg, raw, svg, bmp, tif, ...)"))
-    ui_meta     ("role", "output-extent")
-
-
-property_double  (scale, _("Scale (best at 0.10-0.40s) Lower is larger"), 0.14)
-    description  (_("The scale of the noise function"))
+property_double  (scale, _("Scale "), 0.24)
+    description  (_("The scale of the noise function. (best at 0.10-0.40s) Lower is larger The internal cell noise powering the sparkle."))
+  ui_range      (0.1, 0.7)
     value_range  (0, 1)
 
 property_double  (shape, _("Shape"), 1.0)
-    description  (_("Interpolate between Manhattan and Euclidean distance."))
+    description  (_("Shape transition of the sparkle From a Diamond to a Circle"))
     value_range  (1.0, 2.0)
-
-
-
-property_int     (iterations, _("Iterations"), 1)
-    description  (_("The number of noise octaves."))
-    value_range  (1, 20)
-    ui_meta     ("role", "output-extent")
-
-
 
 property_seed    (seed, _("Random seed"), rand)
     description  (_("The random seed for the noise function"))
 
-property_double (opacitymeter, _("Above 100% Opacity Meter"), 6)
-  value_range   (0, 6.0)
-  ui_steps      (1.0, 6.0)
-
-
-
+property_double (opacitymeter, _("Hyper Opacity"), 1.3)
+    description  (_("Opacity above 100% percent. This will make the sparkles bigger"))
+  value_range   (0, 3.0)
+  ui_range      (0.2, 3)
+  ui_steps      (1.0, 3.0)
 
 #else
 
@@ -108,7 +92,9 @@ property_double (opacitymeter, _("Above 100% Opacity Meter"), 6)
 static void attach (GeglOperation *operation)
 {
   GeglNode *gegl = operation->node;
-  GeglNode *input, *output, *ontop, *color, *divide, *colorerase, *opacity, *layer, *color2, *color3, *cellnoise, *ds;
+  GeglNode *input, *output, *color, *divide, *colorerase, *content, *crop, *opacity, *color2, *color3, *cellnoise, *ds;
+  GeglColor *sparkle_hidden_color = gegl_color_new ("#ff7aff");
+  GeglColor *sparkle_hidden_color2 = gegl_color_new ("#ff7aff");
 
 
   input    = gegl_node_get_input_proxy (gegl, "input");
@@ -121,22 +107,27 @@ static void attach (GeglOperation *operation)
  colorerase = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 57,  "blend-space", 1, NULL);
 
+/*
+Note to future devs, I am fully aware of GEGL Color to Alpha, for some reason it doesn't do the job as good as Gimp's color erase. It leaves pink artifact.
+If you change this to gegl:color-to-alpha it will ruin the filter.
+ */
+
  divide = gegl_node_new_child (gegl,
                                     "operation", "gimp:layer-mode", "layer-mode", 41,  "blend-space", 1, "opacity", 0.03, NULL);
+/*
+GEGL's divide blend mode doesn't have a built in opacity. Gimp's does thus Gimp's wins.
+ */
 
 
   color2    = gegl_node_new_child (gegl,
                                   "operation", "gegl:color",
-                                  NULL);
+                                   "value", sparkle_hidden_color, NULL);
+
 
   color3    = gegl_node_new_child (gegl,
                                   "operation", "gegl:color",
-                                  NULL);
-
-
-  ontop   = gegl_node_new_child (gegl,
-                                  "operation", "gegl:src-atop",
-                                  NULL);
+                                   "value", sparkle_hidden_color2, NULL);
+                           
 
   opacity   = gegl_node_new_child (gegl,
                                   "operation", "gegl:opacity",
@@ -146,49 +137,53 @@ static void attach (GeglOperation *operation)
                                   "operation", "gegl:dropshadow",
                                   NULL);
 
-  layer  = gegl_node_new_child (gegl,
-                                  "operation", "gegl:layer",
-                                  NULL);
 
   cellnoise  = gegl_node_new_child (gegl,
-                                  "operation", "gegl:cell-noise",
+                                  "operation", "gegl:cell-noise", "iterations", 1,
                                   NULL);
 
+/*
+Crops are bug fixers. They solve the delayed color update bug and allow gaussian blur to be on top of sparkle in a GEGL graph.
+ */
+
+  crop   = gegl_node_new_child (gegl,
+                                  "operation", "gegl:crop",
+                                  NULL);
+
+  content   = gegl_node_new_child (gegl,
+                                  "operation", "gegl:src",
+                                  NULL);
+/*
+This, src - is GEGL's equal to the Replace blend mode.
+ */
 
 
+/*
+This is an example of a very complex GEGL Graph that features composers inside composers that was made simple by Beaver - via the notes.
+ */
 
 
-
-
-
-
- gegl_node_link_many (input, color2, divide, colorerase, color, ds, opacity, ontop, output, NULL);
- gegl_node_link_many (color2, cellnoise, NULL);
+/*Everything but crop is inside the replace blend mode. The replace blend mode "content" calls "opacity" the last node in the list. */ 
+gegl_node_link_many (input, content, crop, output, NULL);
+gegl_node_connect_from (content, "aux", opacity, "output");
+/* Majority of the GEGL Graph is here. Divide and Color Erase are composers AKA virtual layers that are inside a composer "Replace".  */ 
+gegl_node_link_many (input, color2, divide, colorerase, color, ds, opacity, NULL);
+/* A GEGL Color Fill and Cell Noise are inside the divide blend mode composer*/
+gegl_node_link_many (color2, cellnoise, NULL);
 gegl_node_connect_from (divide, "aux", cellnoise, "output"); 
-gegl_node_connect_from (colorerase, "aux", color3, "output"); 
-gegl_node_connect_from (ontop, "aux", layer, "output"); 
-
-
+/* Another color fill is inside the color erase blend mode composer all by itself*/
+gegl_node_connect_from (colorerase, "aux", color3, "output");
 
 
   gegl_operation_meta_redirect (operation, "color", color, "value");
-  gegl_operation_meta_redirect (operation, "color3", color3, "value");
-  gegl_operation_meta_redirect (operation, "upload", layer, "src");
   gegl_operation_meta_redirect (operation, "opacity", ds, "opacity");
   gegl_operation_meta_redirect (operation, "x", ds, "x");
   gegl_operation_meta_redirect (operation, "y", ds, "y");
   gegl_operation_meta_redirect (operation, "colorshadow", ds, "color");
-  gegl_operation_meta_redirect (operation, "color2", color2, "value");
   gegl_operation_meta_redirect (operation, "scale", cellnoise, "scale");
   gegl_operation_meta_redirect (operation, "shape", cellnoise, "shape");
   gegl_operation_meta_redirect (operation, "seed", cellnoise, "seed");
-  gegl_operation_meta_redirect (operation, "iterations", cellnoise, "iterations");
   gegl_operation_meta_redirect (operation, "opacitymeter", opacity, "value");
-
-
-
-
-
 
 }
 
