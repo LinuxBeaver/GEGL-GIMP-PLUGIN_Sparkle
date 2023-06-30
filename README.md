@@ -54,5 +54,8 @@ meson setup --buildtype=release build
 ninja -C build
 ```
 
+## Image preview of GEGL Sparkle with edits
+
+![image](https://github.com/LinuxBeaver/GEGL_Sparkle_Gimp_Plugin/assets/78667207/09b7cbc4-1eee-400e-b5ea-262b06685a5a)
 
 
