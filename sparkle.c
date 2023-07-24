@@ -196,12 +196,13 @@ gegl_op_class_init (GeglOpClass *klass)
   operation_class->attach = attach;
 
   gegl_operation_class_set_keys (operation_class,
-    "name",        "gegl:sparkle",
+    "name",        "lb:sparkle",
     "title",       _("Sparkle"),
-    "categories",  "Artistic",
     "reference-hash", "bkagspakzaz10aavx45421xc255001b2ac",
     "description", _("GEGL sparkle effect - works best on 16 bit integer canvases and bright colors"
                      ""),
+    "gimp:menu-path", "<Image>/Filters/Render/Fun",
+    "gimp:menu-label", _("Sparkle Effect..."),
     NULL);
 }
 
