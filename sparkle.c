@@ -165,13 +165,13 @@ This is an example of a very complex GEGL Graph that features composers inside c
 
 /*Everything but crop is inside the replace blend mode. The replace blend mode "content" calls "opacity" the last node in the list. */ 
 gegl_node_link_many (input, content, crop, output, NULL);
-gegl_node_connect_from (content, "aux", opacity, "output");
+gegl_node_connect (content, "aux", opacity, "output");
 /* Majority of the GEGL Graph is here. Divide and Color Erase are composers AKA virtual layers that are inside a composer "Replace".  */ 
 gegl_node_link_many (color2, divide, colorerase, color, ds, opacity, NULL);
 /* A Cell Noise is inside the divide blend mode composer*/
-gegl_node_connect_from (divide, "aux", cellnoise, "output"); 
+gegl_node_connect (divide, "aux", cellnoise, "output"); 
 /* Another color fill is inside the color erase blend mode composer all by itself*/
-gegl_node_connect_from (colorerase, "aux", color3, "output");
+gegl_node_connect (colorerase, "aux", color3, "output");
 
 
   gegl_operation_meta_redirect (operation, "color", color, "value");
