@@ -172,7 +172,7 @@ gegl_node_link_many (color2, divide, colorerase, color, ds, opacity, NULL);
 gegl_node_connect (divide, "aux", cellnoise, "output"); 
 /* Another color fill is inside the color erase blend mode composer all by itself*/
 gegl_node_connect (colorerase, "aux", color3, "output");
-
+gegl_node_connect (crop, "aux", input, "output");
 
   gegl_operation_meta_redirect (operation, "color", color, "value");
   gegl_operation_meta_redirect (operation, "opacity", ds, "opacity");
